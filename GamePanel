@@ -1,0 +1,476 @@
+package LifeSaver_Quest;
+
+import javax.swing.*;
+import javax.swing.text.DefaultCaret;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.Collections;
+
+
+public class GamePanel extends JPanel {
+
+    JPanel titlePanel, playPanel, resultPanel, endPanel;
+    JLabel scoreLabelNumber1, scoreLabelNumber2, scoreLabelNumber3, streakLabelNumber1, streakLabelNumber2, highestStreakLabelNumber, timeLabelNumber1, timeLabelNumber2;
+    JButton choiceButton1, choiceButton2, choiceButton3, choiceButton4;
+    JTextArea questionTextArea, resultTextArea;
+
+    private ArrayList<Question> questions;
+    int currentQuestionIndex, score, streak, highestStreak, time;
+    String yourChoice;
+    private Timer timer;
+    private final Font TITLEFONT = new Font("Times New Roman", Font.PLAIN, 170);
+    private final Font SMALLFONT = new Font("Times New Roman", Font.PLAIN, 52);
+    private final Font LARGEFONT = new Font("Times New Roman", Font.PLAIN, 62);
+
+    TitlePanelListener tsListener = new TitlePanelListener();
+    ResultListener answerListener = new ResultListener();
+    TryAgainListener taListener = new TryAgainListener();
+
+    private GameState currentState = GameState.TITLE;
+
+    public GamePanel() {
+        initializeGame();
+        this.setBackground(Color.BLACK);
+        this.setPreferredSize(new Dimension(1920, 1080));
+        this.setLayout(null);
+        createTitlePanel();
+        createPlayPanel();
+        createResultPanel();
+        createEndPanel();
+        playGame();
+
+    }
+    public void initializeGame(){
+        questions = initializeQuestions();
+        Collections.shuffle(questions);
+        currentQuestionIndex = 0;
+        score = 0;
+        streak = 0;
+        highestStreak = 0;
+        time = 200;
+    }
+    public void playGame(){
+        switch (currentState){
+            case TITLE:
+                this.removeAll();
+                addTitlePanel();
+                break;
+            case PLAY:
+                this.removeAll();
+                addPlayPanel();
+                showNextQuestion();
+                break;
+            case RESULT:
+                this.removeAll();
+                addResultPanel(yourChoice);
+                break;
+            case END:
+                this.removeAll();
+                addEndPanel();
+                break;
+        }
+    }
+    public void addTitlePanel(){
+        this.add(titlePanel);
+        this.revalidate();
+        this.repaint();
+    }
+
+    public void createTitlePanel(){
+        titlePanel = new JPanel();
+        titlePanel.setSize(1920, 1080);
+        titlePanel.setBackground(Color.BLACK);
+        titlePanel.setLayout(null);
+
+        JPanel titleNamePanel = createJPanel(335, 215, 1200, 225);
+        JLabel titleNameLabel = createJLabel("LifeSaver Quest", TITLEFONT);
+        titleNamePanel.add(titleNameLabel);
+
+        JPanel startButtonPanel = createJPanel(800, 650, 300, 150);
+        JButton startButton = createJButton("START", SMALLFONT);
+        startButton.addActionListener(tsListener);
+        startButtonPanel.add(startButton);
+
+        titlePanel.add(titleNamePanel);
+        titlePanel.add(startButtonPanel);
+    }
+
+    public void addPlayPanel(){
+        this.add(playPanel);
+        this.revalidate();
+        this.repaint();
+    }
+
+    public void createPlayPanel(){
+        playPanel = new JPanel();
+        playPanel.setSize(1920, 1080);
+        playPanel.setBackground(Color.BLACK);
+        playPanel.setLayout(null);
+
+        JPanel questionTextPanel = createJPanel(400, 200, 1200, 250);
+        questionTextArea = new JTextArea();
+        questionTextArea.setBounds(350, 200, 1200, 250);
+        questionTextArea.setBackground(Color.BLACK);
+        questionTextArea.setForeground(Color.WHITE);
+        questionTextArea.setFont(LARGEFONT);
+        questionTextArea.setLineWrap(true);
+        questionTextArea.setEditable(false);
+        questionTextArea.setWrapStyleWord(true);
+        DefaultCaret caret = (DefaultCaret) questionTextArea.getCaret();
+        caret.setUpdatePolicy(DefaultCaret.NEVER_UPDATE);
+        questionTextPanel.add(questionTextArea);
+
+        JPanel choiceButtonPanel = createJPanel(140, 600, 1600, 350);
+        choiceButtonPanel.setLayout(new GridLayout(4, 1));
+        choiceButton1 = createJButton("", SMALLFONT);
+        choiceButton1.addActionListener(answerListener);
+        choiceButton1.setActionCommand("c1");
+        choiceButton2 = createJButton("", SMALLFONT);
+        choiceButton2.addActionListener(answerListener);
+        choiceButton2.setActionCommand("c2");
+        choiceButton3 = createJButton("", SMALLFONT);
+        choiceButton3.addActionListener(answerListener);
+        choiceButton3.setActionCommand("c3");
+        choiceButton4 = createJButton("", SMALLFONT);
+        choiceButton4.addActionListener(answerListener);
+        choiceButton4.setActionCommand("c4");
+        choiceButtonPanel.add(choiceButton1);
+        choiceButtonPanel.add(choiceButton2);
+        choiceButtonPanel.add(choiceButton3);
+        choiceButtonPanel.add(choiceButton4);
+
+        JPanel gameInformationPanel = createJPanel(485, 25, 1000, 100);
+        gameInformationPanel.setLayout(new GridLayout(1, 6));
+        JLabel scoreLabel = createJLabel("Score: ", SMALLFONT);
+        scoreLabelNumber1 = createJLabel("" + score, SMALLFONT);
+        JLabel streakLabel = createJLabel("Streak: ", SMALLFONT);
+        streakLabelNumber1 = createJLabel("" + streak, SMALLFONT);
+        JLabel timeLabel = createJLabel("Time: ", SMALLFONT);
+        timeLabelNumber1 = createJLabel("" + time, SMALLFONT);
+        gameInformationPanel.add(scoreLabel);
+        gameInformationPanel.add(scoreLabelNumber1);
+        gameInformationPanel.add(streakLabel);
+        gameInformationPanel.add(streakLabelNumber1);
+        gameInformationPanel.add(timeLabel);
+        gameInformationPanel.add(timeLabelNumber1);
+
+        playPanel.add(questionTextPanel);
+        playPanel.add(choiceButtonPanel);
+        playPanel.add(gameInformationPanel);
+    }
+    public void addResultPanel(String yourChoice){
+        int correctChoiceIndex = questions.get(currentQuestionIndex).getCorrectChoiceIndex();
+
+        if (yourChoice.equals("c" + (correctChoiceIndex + 1))) {
+                initializeCorrectScreen();
+        }
+        else {
+                initializeIncorrectScreen();
+        }
+        this.add(resultPanel);
+        this.revalidate();
+        this.repaint();
+    }
+
+    public void createResultPanel(){
+        resultPanel = new JPanel();
+        resultPanel.setSize(1920, 1080);
+        resultPanel.setBackground(Color.BLACK);
+        resultPanel.setLayout(null);
+
+        JPanel resultTextPanel = createJPanel(400, 200, 1200, 250);
+        playPanel.add(resultTextPanel);
+        resultTextArea = new JTextArea();
+        resultTextArea.setBounds(350, 200, 1200, 250);
+        resultTextArea.setBackground(Color.BLACK);
+        resultTextArea.setForeground(Color.WHITE);
+        resultTextArea.setFont(LARGEFONT);
+        resultTextArea.setLineWrap(true);
+        resultTextArea.setEditable(false);
+        resultTextArea.setWrapStyleWord(true);
+        DefaultCaret caret = (DefaultCaret) resultTextArea.getCaret();
+        caret.setUpdatePolicy(DefaultCaret.NEVER_UPDATE);
+        resultTextPanel.add(resultTextArea);
+
+        JPanel continueButtonPanel = createJPanel(790, 650, 325, 150);
+        JButton continueButton = createJButton("CONTINUE", SMALLFONT);
+        continueButton.addActionListener(answerListener);
+        continueButton.setActionCommand("continue");
+        continueButtonPanel.add(continueButton);
+
+        JPanel gameInformationPanel = createJPanel(485, 25, 1000, 100);
+        gameInformationPanel.setLayout(new GridLayout(1, 6));
+        JLabel scoreLabel = createJLabel("Score: ", SMALLFONT);
+        scoreLabelNumber2 = createJLabel("" + score, SMALLFONT);
+        JLabel streakLabel = createJLabel("Streak: ", SMALLFONT);
+        streakLabelNumber2 = createJLabel("" + streak, SMALLFONT);
+        JLabel timeLabel = createJLabel("Time: ", SMALLFONT);
+        timeLabelNumber2 = createJLabel("" + time, SMALLFONT);
+        gameInformationPanel.add(scoreLabel);
+        gameInformationPanel.add(scoreLabelNumber2);
+        gameInformationPanel.add(streakLabel);
+        gameInformationPanel.add(streakLabelNumber2);
+        gameInformationPanel.add(timeLabel);
+        gameInformationPanel.add(timeLabelNumber2);
+
+        resultPanel.add(resultTextPanel);
+        resultPanel.add(continueButtonPanel);
+        resultPanel.add(gameInformationPanel);
+    }
+
+    private void initializeCorrectScreen() {
+        questionTextArea.setVisible(false);
+        score += 100;
+        streak++;
+
+        if (streak > highestStreak) {
+            highestStreak = streak;
+        }
+
+        resultTextArea.setText("CORRECT, +100 Score");
+
+        if (currentQuestionIndex < questions.size() - 1) {
+            timer.restart();
+        }
+    }
+
+    private void initializeIncorrectScreen() {
+        int correctChoiceIndex = questions.get(currentQuestionIndex).getCorrectChoiceIndex();
+        String correctChoice = questions.get(currentQuestionIndex).getChoices()[correctChoiceIndex];
+
+        resultTextArea.setText("INCORRECT, the correct choice was " + correctChoice);
+
+        streak = 0;
+
+        if (currentQuestionIndex < questions.size() - 1) {
+            timer.restart();
+        }
+    }
+
+    public void addEndPanel(){
+        this.add(endPanel);
+        this.revalidate();
+        this.repaint();
+    }
+
+    public void createEndPanel() {
+        endPanel = new JPanel();
+        endPanel.setSize(1920, 1080);
+        endPanel.setBackground(Color.BLACK);
+        endPanel.setLayout(null);
+
+        JPanel gameInformationPanel = createJPanel(185, 25, 2000, 100);
+        gameInformationPanel.setLayout(new GridLayout(1, 4));
+        JLabel scoreLabel = createJLabel("Score: ", SMALLFONT);
+        scoreLabelNumber3 = createJLabel("" + score, SMALLFONT);
+        JLabel highestStreakLabel = createJLabel("Highest Streak: ", SMALLFONT);
+        highestStreakLabelNumber = createJLabel("" + highestStreak, SMALLFONT);
+        gameInformationPanel.add(scoreLabel);
+        gameInformationPanel.add(scoreLabelNumber3);
+        gameInformationPanel.add(highestStreakLabel);
+        gameInformationPanel.add(highestStreakLabelNumber);
+
+        JPanel gameOverPanel = createJPanel(510, 225, 850, 225);
+        JLabel gameOverLabel = createJLabel("Game Over", TITLEFONT);
+        gameOverPanel.add(gameOverLabel);
+
+        JPanel tryAgainPanel = createJPanel(665, 480, 550, 100);
+        JLabel tryAgainLabel = createJLabel("TRY AGAIN?", LARGEFONT);
+        tryAgainPanel.add(tryAgainLabel);
+
+        JPanel yesTryAgainPanel = createJPanel(700, 600, 175, 80);
+        JButton yesTryAgainButton = createJButton("YES", SMALLFONT);
+        yesTryAgainButton.addActionListener(taListener);
+        yesTryAgainButton.setActionCommand("yes");
+        yesTryAgainPanel.add(yesTryAgainButton);
+
+        JPanel noTryAgainPanel = createJPanel(1000, 600, 175, 80);
+        JButton noTryAgainButton = createJButton("NO", SMALLFONT);
+        noTryAgainButton.addActionListener(taListener);
+        noTryAgainButton.setActionCommand("no");
+        noTryAgainPanel.add(noTryAgainButton);
+
+        endPanel.add(gameInformationPanel);
+        endPanel.add(gameOverPanel);
+        endPanel.add(tryAgainPanel);
+        endPanel.add(yesTryAgainPanel);
+        endPanel.add(noTryAgainPanel);
+    }
+
+    private void showNextQuestion() {
+        questionTextArea.setVisible(true);
+
+        if (currentQuestionIndex < questions.size()) {
+            Question currentQuestion = questions.get(currentQuestionIndex);
+            updateQuestionPanel(currentQuestion);
+            updateScorePanel();
+            startTimer();
+        }
+        else {
+            currentState = GameState.END;
+            playGame();
+        }
+    }
+
+    private void updateQuestionPanel(Question question) {
+        questionTextArea.setText(question.getQuestion());
+        choiceButton1.setText(question.getChoices()[0]);
+        choiceButton2.setText(question.getChoices()[1]);
+        choiceButton3.setText(question.getChoices()[2]);
+        choiceButton4.setText(question.getChoices()[3]);
+        revalidate();
+    }
+
+    private void updateScorePanel() {
+        scoreLabelNumber1.setText("" + score);
+        scoreLabelNumber2.setText("" + score);
+        scoreLabelNumber3.setText("" + score);
+        streakLabelNumber1.setText("" + streak);
+        streakLabelNumber2.setText("" + streak);
+        highestStreakLabelNumber.setText("" + highestStreak);
+        timeLabelNumber1.setText("" + time);
+        timeLabelNumber2.setText("" + time);
+    }
+
+    private void startTimer() {
+        timer = new Timer(1000, e -> {
+            if (currentState == GameState.PLAY) {
+                time--;
+
+                if (time <= 0) {
+                    currentState = GameState.END;
+                    timer.stop();
+                    playGame();
+                } else {
+                    timeLabelNumber1.setText("" + time);
+                    timeLabelNumber2.setText("" + time);
+                }
+            }
+        });
+        timer.setRepeats(true);
+        timer.start();
+    }
+
+    private class TitlePanelListener implements ActionListener {
+        public void actionPerformed(ActionEvent event) {
+            currentState = GameState.PLAY;
+            playGame();
+        }
+    }
+
+    private class ResultListener implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent event) {
+            timer.stop();
+            yourChoice = event.getActionCommand();
+
+            if (yourChoice.equals("continue")) {
+                currentQuestionIndex++;
+                currentState = GameState.PLAY;
+            } else {
+                currentState = GameState.RESULT;
+            }
+            playGame();
+        }
+    }
+
+    private class TryAgainListener implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent event) {
+
+            String yourChoice = event.getActionCommand();
+
+            if (yourChoice.equals("yes")){
+                resetGame();
+            }
+            if (yourChoice.equals("no")){
+                System.exit(0);
+            }
+        }
+    }
+    public void resetGame(){
+        initializeGame();
+        currentState = GameState.TITLE;
+        playGame();
+    }
+
+    private static JPanel createJPanel(int x, int y, int width, int height) {
+        JPanel panel = new JPanel();
+        panel.setBackground(Color.BLACK);
+        panel.setBounds(x, y, width, height);
+        return panel;
+    }
+
+    private static JLabel createJLabel(String labelText, Font font) {
+        JLabel label = new JLabel(labelText);
+        label.setForeground(Color.WHITE);
+        label.setFont(font);
+        return label;
+    }
+
+    private static JButton createJButton(String labelText, Font font) {
+        JButton button = new JButton(labelText);
+        button.setBackground(Color.BLACK);
+        button.setForeground(Color.WHITE);
+        button.setFont(font);
+        button.setFocusPainted(false);
+        return button;
+    }
+
+    private ArrayList<Question> initializeQuestions() {
+        ArrayList<Question> questions = new ArrayList<>();
+        questions.add(new Question("What does CPR stand for?", "Central Processing Unit", "Cerebral Performance Ratio", "Cardiopulmonary resuscitation", "Caramel Popcorn Revolution", 2));
+        questions.add(new Question("What does PPE stand for?", "Personal Protective Equipment", "Public Performance Excellence", "Primary Prevention Exercise", "Professional Protocol Evaluation", 0));
+        questions.add(new Question("What does AED stand for?", "Automated Emergency Device", "Automated External Defibrillator", "Advanced Emergency Directive", "Automatic External Device", 1));
+        questions.add(new Question("What is the purpose of the ABCs in first aid?", "Airway, Breathing, Circulation", "Assess, Bandage, Comfort", "Alert, Breathe, Check", "Apply, Bind, Clean", 0));
+        questions.add(new Question("What does FAST stand for?", "Foot numbness, Abdominal pain, Stiff neck, Temperature check", "Fingertip numbness, Ankle swelling, Slow breathing, Tourniquet application", "Forehead sweating, Arm numbness, Stuttering, Throat Clearing", "Facial Drooping, Arm weakness, Slurred speech, Time to call 911", 3));
+        questions.add(new Question("What does ABCDE stand for?", "Ambulance, Bandaging, Compression, Defibrillation, Evacuation", "Alertness, Blood pressure, Chest pain, Diaphoresis, Electrocardiogram", "Airway, Breathing, Circulation, Disability, Exposure", "Axillary temperature, Breathing rate, Circulation check, Dental assessment, Eye movement", 2));
+        questions.add(new Question("For CPR, what is the recommended compressions to rescue breaths ratio?", "15:2", "30:2", "5:1", "10:1", 1));
+        questions.add(new Question("For CPR, what is the recommended amount of compressions per minute?", "60-80", "80-100", "100-120", "120-140", 2));
+        questions.add(new Question("For adult CPR, what is the recommended depth for chest compressions?", "1 inch", "1.5 inches", "2 inches", "2.5 inches", 2));
+        questions.add(new Question("For child CPR, what is the recommended depth for chest compressions?", "1 inch", "1.5 inches", "2 inches", "2.5 inches", 2));
+        questions.add(new Question("For infant CPR, what is the recommended depth for chest compressions?", "1 inch", "1.5 inches", "2 inches", "2.5 inches", 1));
+        questions.add(new Question("For adult CPR, what is the proper form regarding hands?", "1 hand", "2 hands", "2-3 fingers", "4-5 fingers", 1));
+        questions.add(new Question("For child CPR, what is the proper form regarding hands?", "1 hand", "2 hands", "2-3 fingers", " 4-5 fingers", 0));
+        questions.add(new Question("What is the purpose of CPR?", "Stop bleeding", " Restore breathing and circulation", "Relieve pain", "Assess consciousness", 1));
+        questions.add(new Question("What is the purpose of the recovery position?", "Prevent shock", "Maintain an open airway", "Control bleeding", "Assess consciousness", 1));
+        questions.add(new Question("For infant CPR, what is the proper form regarding hands?", "1 hand", "2 hands", "2-3 fingers", "4-5 fingers", 2));
+        questions.add(new Question("What is the FIRST step to perform CPR?", "Check for a pulse", "Begin chest compressions", "Give rescue breaths", "Check for danger", 3));
+        questions.add(new Question("What is the SECOND step to perform CPR?", "Shout/Call for emergency help", "Check for responsiveness", "Begin CPR", "Check for breaths", 1));
+        questions.add(new Question("What is the THIRD step to perform CPR?", "Begin CPR", "Check for responsiveness", "Shout/Call for emergency help", "Repeat", 2));
+        questions.add(new Question("What is the FOURTH step to perform CPR?", "Check for breaths", "Begin CPR", "Repeat", "Check for danger", 0));
+        questions.add(new Question("What is the FIFTH step to perform CPR?", "Repeat", "Check for breaths", "Begin CPR", "Shout/call for emergency help", 2));
+        questions.add(new Question("What is the SIXTH step to perform CPR?", "Check for danger", "Shout/Call for emergency help", "Begin CPR", "Repeat", 3));
+        questions.add(new Question("What is the purpose of an EpiPen?", "Treat heatstroke", "Relieve pain", "Stop bleeding", "Administer epinephrine for severe allergic reactions", 3));
+        questions.add(new Question("Where should you administer the EpiPen?", "Spray it onto the skin", "Insert it into the nostril", "Apply it topically on the chest", "Inject it into the outer thigh", 3));
+        questions.add(new Question("If someone is experiencing an anaphylactic reaction, what is the first step?", "Offer them a glass of water", "Call for emergency help and administer an EpiPen if available", "Encourage them to lie down and rest", "Apply a cold compress to the affected area", 1));
+        questions.add(new Question("What should you do if you come across someone experiencing an allergic reaction with difficulty breathing amd no EpiPen is available?", "Offer them water to drink", "Perform chest compressions", "Call for emergency help and monitor their breathing", "Apply a tourniquet above the affected area", 2));
+        questions.add(new Question("Which of the following is a potential sign of an allergic reaction in a person who has been stung by a bee?", "Swelling at the site of the sting", "Pale skin", "Slow breathing", "Decreased heart rate", 0));
+        questions.add(new Question("How should you remove a bee stinger from the skin?", "Use tweezers to pull it out", "Scrape it off with a credit card", "Apply ice to freeze and then remove it", "Leave it in place", 1));
+        questions.add(new Question("How does the EpiPen help with the allergic reaction?", "Relieve pain", "Reduce swelling", "Open the airways and improve breathing", "Lower blood pressure", 2));
+        questions.add(new Question("How should you treat a minor allergic reaction, such as redness and swelling from a bug bite?", "Apply a hot compress", "Apply a cold compress", "Rub the affected area with dirt", "Ignore it", 1));
+        questions.add(new Question("How should you treat a minor burn?", "Apply ice immediately", "Use a heating pad", "Immerse in cold water or use a cold compress", "Rub the burn with a dry cloth", 2));
+        questions.add(new Question("How should you treat frostbite?", "Apply hot water to the affected area", "Rub the area vigorously with hands", " Immerse the affected area in warm (not hot) water", "Leave the affected area exposed to the cold", 2));
+        questions.add(new Question("What is a way you could control bleeding from a wound?", "Immerse in cold water", "Elevate the injured limb and apply direct pressure", "Remove any lodge objects from the wound", "Use a heating pad", 1));
+        questions.add(new Question("How should you treat a snake bite?", "Apply a tourniquet", "Suck out the venom", "Clean the wound with alcohol", "Keep the bitten limb immobilized and below the heart", 3));
+        questions.add(new Question("How should you treat heat stroke?", "Move them to a cooler place and cool their body with cool compresses or a cool bath", "Apply a heating pad to the affected person", "Encourage them to wear extra layers of clothing", "Administer painkillers to reduce discomfort", 0));
+        questions.add(new Question("How should you treat heat exhaustion?", "Apply a heating pad to the affected person", "Move them to a cooler environment and encourage rest", "Provide hot beverages to increase body temperature", "Administer painkillers to reduce discomfort", 1));
+        questions.add(new Question("How should you treat hypothermia?", "Immerse the person in hot water", "Apply a heating pad to the affected person", "Remove wet clothing, warm the person gradually, and provide warm fluids", "Rub the person's extremities vigorously to stimulate circulation", 2));
+        questions.add(new Question("How should you treat a stroke?", "Apply a cold compress to the person's forehead", "Encourage the person to take deep breaths", "Have the person lie down and elevate their legs", "Administer aspirin if available and call for emergency help", 3));
+        questions.add(new Question("How should you treat a heart attack?", "Administer aspirin if available and call for emergency help", "Encourage the person to take deep breaths", "Apply a cold compress to the person's forehead", "Have the person lie down and elevate their legs", 0));
+        questions.add(new Question("How should you treat a seizure?", "Apply a cold compress to the person's forehead", "Encourage the person to take deep breaths", "Administer aspirin if available and call for emergency help", "Place the person on their side to maintain an open airway and protect them from injury", 3));
+        questions.add(new Question("What should you do if someone is unconscious but breathing?", " Start CPR", "Call for help", " Check for a pulse", "Put them in the recovery position", 3));
+        questions.add(new Question("How should you treat a sprained ankle?", "Apply a heating pad", "Immobilize the joint and apply a cold compress", "Massage the area vigorously", "Encourage the person to walk on it immediately", 1));
+        questions.add(new Question("How should you treat a dislocated joint?", "Attempt to relocate the joint yourself", "Apply a heating pad to the area", "Immobilize the joint and seek medical help", "Massage the area to reduce swelling", 2));
+        questions.add(new Question("How should you treat a nosebleed?", "Tilt the head backward", "Pinch the nostrils together and lean forward", "Insert a cotton ball into the nostril", "Apply ice to the back of the neck", 1));
+        questions.add(new Question("How do you recognize the signs of shock?", "Rapid breathing", " High blood pressure", "Warm skin", "Dilated pupils", 0));
+        questions.add(new Question("How do you recognize if someone is having a stroke?", " Rapid breathing", "Profuse sweating", "Sudden weakness or numbness, especially on one side of the body", "Low blood pressure", 2));
+        questions.add(new Question("What is the primary purpose of a first aid kit?", "Provide comfort to the injured person", "Replace professional medical care", "Clean wounds and stop bleeding", "Administer medications", 2));
+        questions.add(new Question("In first aid, what is the primary purpose of a tourniquet?", "Relieve pain", "Control bleeding", "Stabilize a dislocated joint", "Maintain an open airway", 1));
+        questions.add(new Question("Where should you position your hands to perform abdominal thrusts on an adult choking victim?", "Above the navel and below the ribcage", "Around the neck", "On the lower back", "Across the chest", 0));
+
+        return questions;
+    }
+}
