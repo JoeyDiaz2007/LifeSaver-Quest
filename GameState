@@ -1,0 +1,5 @@
+package LifeSaver_Quest;
+
+public enum GameState {
+    TITLE, PLAY, RESULT, END
+}
