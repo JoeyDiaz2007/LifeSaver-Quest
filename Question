@@ -1,0 +1,25 @@
+package LifeSaver_Quest;
+
+public class Question {
+    private String question;
+    private String[] choices;
+    private int correctChoiceIndex;
+    
+    public Question(String question, String choiceA, String choiceB, String choiceC, String choiceD, int correctChoiceIndex) {
+        this.question = question;
+        this.choices = new String[]{choiceA, choiceB, choiceC, choiceD};
+        this.correctChoiceIndex = correctChoiceIndex;
+    }
+    
+    public String getQuestion() {
+        return question;
+    }
+
+    public String[] getChoices() {
+        return choices;
+    }
+    
+    public int getCorrectChoiceIndex() {
+        return correctChoiceIndex;
+    }
+}
